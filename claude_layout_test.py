@@ -201,7 +201,7 @@ class PasswordEntry(QFrame):
 class KeePassUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("GlassPass - Password Manager")
+        self.setWindowTitle("BluLock - Password Manager")
         self.setGeometry(100, 100, 1100, 700)
 
         # Transparentes Fenster aktivieren
@@ -306,7 +306,7 @@ class KeePassUI(QMainWindow):
         header.setLayout(header_layout)
 
         # Logo und Titel
-        title_label = QLabel("🔐 GlassPass")
+        title_label = QLabel("BluLock")
         title_label.setStyleSheet("""
             QLabel {
                 color: rgba(255, 255, 255, 230);
