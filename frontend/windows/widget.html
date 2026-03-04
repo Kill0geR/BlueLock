@@ -23,7 +23,22 @@
     box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(100,181,246,0.1);
     position: relative;
     overflow: hidden;
+    transition: all 0.25s ease;
   }
+
+  .widget.minimized .hotkeys,
+  .widget.minimized .message-bar { display: none; }
+  .widget.minimized .header { margin-bottom: 0; }
+
+  .minimize-btn {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(100,181,246,0.08); border: 1px solid rgba(100,181,246,0.15);
+    color: rgba(180,215,255,0.4); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; transition: all 0.2s;
+    -webkit-app-region: no-drag; flex-shrink: 0; margin-left: 6px;
+  }
+  .minimize-btn:hover { background: rgba(100,181,246,0.18); color: #64b5f6; border-color: rgba(100,181,246,0.3); }
 
   .widget::before {
     content: '';
@@ -196,9 +211,12 @@
       <div class="logo-dot"></div>
       <div class="logo-text">BlueLock</div>
     </div>
-    <div class="status" id="statusArea">
-      <div class="status-dot" id="statusDot"></div>
-      <span class="status-text" id="statusText">AKTIV</span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <div class="status" id="statusArea">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">AKTIV</span>
+      </div>
+      <div class="minimize-btn" onclick="toggleMinimize()" id="minBtn">—</div>
     </div>
   </div>
 
@@ -261,6 +279,11 @@ ipcRenderer.on('autofill-done', (event, appName) => {
   setMessage('success', `✓ Daten erfolgreich hinzugefügt!`);
 });
 
+ipcRenderer.on('autofill-not-found', () => {
+  setMessage('idle', '⚠ Keine passende App gefunden', false);
+  setTimeout(() => setMessage('idle', 'Bereit — warte auf Hotkey', false), 3000);
+});
+
 ipcRenderer.on('autofill-scanning', () => {
   setMessage('scanning', 'KI scannt Bildschirm...', false);
 });
@@ -283,6 +306,10 @@ async function triggerF4() {
     setMessage('idle', '⚠ Keine passende App gefunden', false);
     setTimeout(() => setMessage('idle', 'Bereit — warte auf Hotkey', false), 3000);
   }
+}
+
+function toggleMinimize() {
+  ipcRenderer.send('minimize-widget');
 }
 </script>
 </body>

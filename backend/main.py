@@ -16,7 +16,6 @@ from PIL import ImageGrab
 import base64
 import io
 import time
-
 from vault import Vault
 from matcher import ScreenMatcher
 from notifier import Notifier
@@ -140,10 +139,10 @@ def take_screenshot_b64():
 def do_autofill(username: str, password: str):
     """Type username and password into active window"""
     time.sleep(0.3)
-    pyautogui.typewrite(username, interval=0.05)
-    pyautogui.press("tab")
+    keyboard.write(username, delay=0.05)
+    keyboard.press("tab")
     time.sleep(0.1)
-    pyautogui.typewrite(password, interval=0.05)
+    keyboard.write(password, delay=0.05)
 
 
 # ─── Hotkey Listener ───────────────────────────────────────────────────────────
@@ -155,6 +154,7 @@ def start_hotkey_listener():
     def on_f3():
         """F3: Signal Electron to open the record popup"""
         try:
+            print("f3 wurde gedrückt")
             screenshot_b64 = take_screenshot_b64()
             requests.post("http://localhost:3131/trigger-record", 
                          json={"screenshot": screenshot_b64}, timeout=2)
@@ -162,9 +162,19 @@ def start_hotkey_listener():
             pass
 
     def on_f4():
-        """F4: Trigger autofill"""
+        """F4: Trigger autofill — notify Electron widget before and after"""
         try:
-            requests.post("http://localhost:8000/autofill", timeout=5)
+            # Tell widget: scanning started
+            requests.post("http://localhost:3131/trigger-autofill-start", timeout=2)
+        except Exception:
+            pass
+        try:
+            res = requests.post("http://localhost:8000/autofill", timeout=5)
+            data = res.json()
+            # Tell widget: done (success or not)
+            requests.post("http://localhost:3131/trigger-autofill-done",
+                          json={"success": data.get("success", False),
+                                "app_name": data.get("app_name", "")}, timeout=2)
         except Exception:
             pass
 

@@ -81,7 +81,7 @@ function createWidget() {
     },
   });
 
-  widgetWindow.loadFile("widget.html");
+  widgetWindow.loadFile("windows/widget.html");
   widgetWindow.setIgnoreMouseEvents(false);
 
   // Make widget draggable but keep position bottom-right
@@ -102,7 +102,7 @@ function createRecordPopup(screenshotB64) {
 
   popupWindow = new BrowserWindow({
     width: 420,
-    height: 480,
+    height: 600,
     x: Math.round(width / 2 - 210),
     y: Math.round(height / 2 - 240),
     frame: false,
@@ -115,7 +115,7 @@ function createRecordPopup(screenshotB64) {
     },
   });
 
-  popupWindow.loadFile("popup.html");
+  popupWindow.loadFile("windows/popup.html");
 
   // Send screenshot to popup once it's ready
   popupWindow.webContents.once("did-finish-load", () => {
@@ -150,7 +150,7 @@ function createOrShowVault() {
     },
   });
 
-  vaultWindow.loadFile("bluelock.html");
+  vaultWindow.loadFile("../bluelock.html");
 
   vaultWindow.on("closed", () => {
     vaultWindow = null;
@@ -178,12 +178,11 @@ function startRecordServer() {
         try {
           const { screenshot } = JSON.parse(body);
           createRecordPopup(screenshot);
-
-          // Notify widget
           if (widgetWindow && !widgetWindow.isDestroyed()) {
+            widgetWindow.restore();
+            widgetWindow.show();
             widgetWindow.webContents.send("recording-started");
           }
-
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: true }));
         } catch (e) {
@@ -191,6 +190,35 @@ function startRecordServer() {
           res.end(JSON.stringify({ error: e.message }));
         }
       });
+
+    } else if (req.method === "POST" && req.url === "/trigger-autofill-start") {
+      if (widgetWindow && !widgetWindow.isDestroyed()) {
+        widgetWindow.webContents.send("autofill-scanning");
+      }
+      res.writeHead(200);
+      res.end(JSON.stringify({ success: true }));
+
+    } else if (req.method === "POST" && req.url === "/trigger-autofill-done") {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => {
+        try {
+          const { success, app_name } = JSON.parse(body);
+          if (widgetWindow && !widgetWindow.isDestroyed()) {
+            if (success) {
+              widgetWindow.webContents.send("autofill-done", app_name);
+            } else {
+              widgetWindow.webContents.send("autofill-not-found");
+            }
+          }
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true }));
+        } catch (e) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+
     } else {
       res.writeHead(404);
       res.end();
@@ -198,16 +226,34 @@ function startRecordServer() {
   });
 
   recordServer.listen(3131, "127.0.0.1", () => {
-    console.log("🔵 BlueLock Electron server on port 3131");
+    console.log("BlueLock Electron server on port 3131");
   });
 }
 
 // ─── IPC Events (from renderer windows) ───────────────────────────────────────
 
+ipcMain.on("trigger-record-manual", (event, screenshotB64) => {
+  createRecordPopup(screenshotB64);
+  if (widgetWindow && !widgetWindow.isDestroyed()) {
+    widgetWindow.webContents.send("recording-started");
+  }
+});
+
 ipcMain.on("close-popup", () => {
   if (popupWindow && !popupWindow.isDestroyed()) popupWindow.close();
   if (widgetWindow && !widgetWindow.isDestroyed()) {
     widgetWindow.webContents.send("recording-stopped", "saved");
+  }
+});
+
+ipcMain.on("minimize-widget", () => {
+  if (widgetWindow && !widgetWindow.isDestroyed()) widgetWindow.minimize();
+});
+
+ipcMain.on("restore-widget", () => {
+  if (widgetWindow && !widgetWindow.isDestroyed()) {
+    widgetWindow.restore();
+    widgetWindow.show();
   }
 });
 

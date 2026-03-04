@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlueLock</title>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300;400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-deep: #020b18;
+    --blue-dark: #041526;
+    --blue-mid: #0a2540;
+    --blue-glow: #0d6efd;
+    --blue-bright: #2196f3;
+    --blue-ice: #64b5f6;
+    --blue-ultra: #00d4ff;
+    --glass-bg: rgba(8, 30, 60, 0.45);
+    --glass-border: rgba(100, 181, 246, 0.2);
+    --glass-shine: rgba(100, 181, 246, 0.08);
+    --text-primary: #e8f4ff;
+    --text-secondary: rgba(180, 215, 255, 0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Exo 2', sans-serif;
+    background: var(--blue-deep);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(13,110,253,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(0,212,255,0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #020b18 0%, #041526 50%, #020d1f 100%);
+  }
+
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(100,181,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(100,181,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridDrift 20s linear infinite;
+  }
+
+  @keyframes gridDrift { 0% { transform: translateY(0); } 100% { transform: translateY(40px); } }
+
+  .orb { position: fixed; border-radius: 50%; filter: blur(80px); animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
+  .orb-1 { width: 400px; height: 400px; background: rgba(13,110,253,0.12); top: -100px; left: -100px; }
+  .orb-2 { width: 300px; height: 300px; background: rgba(0,212,255,0.08); bottom: -50px; right: -50px; animation-delay: 3s; }
+
+  @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px,-30px) scale(1.1); } }
+
+  .app {
+    position: relative; z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 60px 1fr;
+    height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    background: rgba(4,21,38,0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    position: relative;
+    -webkit-app-region: drag;
+  }
+
+  .header::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue-ultra), transparent);
+    opacity: 0.5;
+  }
+
+  .logo { display: flex; align-items: center; gap: 10px; }
+
+  .logo-text {
+    font-size: 18px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    background: linear-gradient(135deg, #64b5f6, #00d4ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .logo-version { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-secondary); letter-spacing: 1px; }
+
+  .header-right { display: flex; align-items: center; gap: 16px; -webkit-app-region: no-drag; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 14px;
+    background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px;
+    font-size: 11px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; color: var(--blue-ultra);
+  }
+
+  .status-dot { width: 6px; height: 6px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 8px #00ff88; animation: pulse 2s ease-in-out infinite; }
+  .status-dot.offline { background: #ff4444; box-shadow: 0 0 8px #ff4444; animation: none; }
+
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(0.8); } }
+
+  .win-btn { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: all 0.2s; }
+  .win-btn-close { background: rgba(255,60,60,0.15); color: #ff8080; border: 1px solid rgba(255,60,60,0.2); }
+  .win-btn-close:hover { background: rgba(255,60,60,0.3); }
+
+  /* Sidebar */
+  .sidebar {
+    background: rgba(4,18,35,0.5); backdrop-filter: blur(20px);
+    border-right: 1px solid var(--glass-border);
+    padding: 20px 0; display: flex; flex-direction: column; overflow-y: auto;
+  }
+
+  .sidebar-label { font-size: 9px; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); padding: 0 24px; margin-bottom: 6px; opacity: 0.6; }
+
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 10px; cursor: pointer; transition: all 0.2s; color: var(--text-secondary); font-size: 13px; position: relative; margin: 2px 8px; }
+  .nav-item:hover { background: rgba(100,181,246,0.08); color: var(--text-primary); }
+  .nav-item.active { background: rgba(13,110,253,0.15); color: var(--blue-ice); border: 1px solid rgba(100,181,246,0.15); }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: var(--blue-ultra); border-radius: 0 2px 2px 0; box-shadow: 0 0 8px var(--blue-ultra); }
+
+  .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 7px; background: rgba(100,181,246,0.12); border-radius: 10px; color: var(--blue-ice); }
+
+  .sidebar-divider { height: 1px; background: var(--glass-border); margin: 10px 16px; }
+  .sidebar-footer { margin-top: auto; padding: 16px; }
+
+  .vault-status { padding: 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; backdrop-filter: blur(10px); }
+  .vault-label { font-size: 10px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; }
+  .vault-bar-bg { height: 4px; background: rgba(100,181,246,0.1); border-radius: 2px; overflow: hidden; }
+  .vault-bar-fill { height: 100%; background: linear-gradient(90deg, var(--blue-bright), var(--blue-ultra)); border-radius: 2px; box-shadow: 0 0 8px rgba(0,212,255,0.4); transition: width 0.5s ease; }
+  .vault-info { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); }
+
+  /* Main */
+  .main { padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+  .main-header { display: flex; align-items: center; justify-content: space-between; }
+  .page-title { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+  .page-subtitle { font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+  .btn { display: flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer; font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; transition: all 0.2s; }
+  .btn-ghost { background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+  .btn-ghost:hover { color: var(--text-primary); border-color: rgba(100,181,246,0.35); }
+
+  /* Search */
+  .search-bar { position: relative; }
+  .search-input { width: 100%; padding: 11px 20px 11px 42px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-primary); font-family: 'Exo 2', sans-serif; font-size: 13px; backdrop-filter: blur(20px); outline: none; transition: all 0.2s; }
+  .search-input::placeholder { color: var(--text-secondary); }
+  .search-input:focus { border-color: rgba(100,181,246,0.4); box-shadow: 0 0 0 3px rgba(13,110,253,0.1); }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); width: 16px; height: 16px; }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .stat-card { padding: 16px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; backdrop-filter: blur(20px); position: relative; overflow: hidden; transition: all 0.2s; }
+  .stat-card:hover { border-color: rgba(100,181,246,0.3); transform: translateY(-2px); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(100,181,246,0.3), transparent); }
+  .stat-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; background: linear-gradient(135deg, #e8f4ff, var(--blue-ultra)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { font-size: 11px; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .stat-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); opacity: 0.08; width: 48px; height: 48px; color: var(--blue-ultra); }
+
+  .section-title { font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px; text-transform: uppercase; color: var(--text-secondary); opacity: 0.7; }
+
+  /* Cards */
+  .cred-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+
+  .cred-card { padding: 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; backdrop-filter: blur(20px); transition: all 0.25s; position: relative; overflow: hidden; }
+  .cred-card:hover { border-color: rgba(100,181,246,0.3); transform: translateY(-3px); box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
+  .cred-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--glass-shine) 0%, transparent 60%); pointer-events: none; }
+
+  .cred-app-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .cred-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(13,110,253,0.15); border: 1px solid rgba(100,181,246,0.15); flex-shrink: 0; }
+  .cred-app-name { font-size: 14px; font-weight: 600; }
+  .cred-app-type { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); margin-top: 2px; }
+
+  .cred-field { margin-bottom: 8px; }
+  .cred-field-label { font-size: 9px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 3px; opacity: 0.6; }
+  .cred-field-value { font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--blue-ice); background: rgba(100,181,246,0.06); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(100,181,246,0.1); display: flex; align-items: center; justify-content: space-between; word-break: break-all; }
+
+  .cred-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(100,181,246,0.08); }
+  .cred-btn { flex: 1; padding: 7px; border-radius: 8px; border: 1px solid rgba(100,181,246,0.15); background: rgba(100,181,246,0.05); color: var(--text-secondary); font-family: 'Exo 2', sans-serif; font-size: 11px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .cred-btn:hover { background: rgba(13,110,253,0.15); color: var(--blue-ice); border-color: rgba(100,181,246,0.3); }
+  .cred-btn.autofill { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); color: var(--blue-ultra); }
+  .cred-btn.autofill:hover { background: rgba(0,212,255,0.15); box-shadow: 0 0 15px rgba(0,212,255,0.2); }
+  .cred-btn.delete { background: rgba(255,60,60,0.05); border-color: rgba(255,60,60,0.15); color: rgba(255,120,120,0.6); }
+  .cred-btn.delete:hover { background: rgba(255,60,60,0.15); color: #ff8080; border-color: rgba(255,60,60,0.3); }
+
+  .eye-btn { cursor: pointer; opacity: 0.4; font-size: 11px; flex-shrink: 0; margin-left: 6px; }
+  .eye-btn:hover { opacity: 0.8; }
+
+  /* Empty / Loading */
+  .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { opacity: 0.5; line-height: 1.8; }
+
+  .loading { text-align: center; padding: 40px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; animation: loadingFade 1s ease-in-out infinite alternate; }
+  @keyframes loadingFade { from { opacity: 0.3; } to { opacity: 0.8; } }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); padding: 10px 22px; border-radius: 10px; font-size: 12px; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; z-index: 999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; }
+  .toast.error { background: rgba(255,60,60,0.1); border: 1px solid rgba(255,60,60,0.25); color: #ff8080; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(100,181,246,0.2); border-radius: 2px; }
+
+  .fade-in { animation: fadeIn 0.3s ease forwards; opacity: 0; }
+  @keyframes fadeIn { to { opacity:1; transform:translateY(0); } from { opacity:0; transform:translateY(8px); } }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas"></div>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <rect x="4" y="12" width="20" height="14" rx="3" stroke="url(#g)" stroke-width="1.5"/>
+        <path d="M9 12V8.5C9 5.46 11.46 3 14 3C16.54 3 19 5.46 19 8.5V12" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="14" cy="19" r="2.5" fill="url(#g)"/>
+        <line x1="14" y1="21.5" x2="14" y2="24" stroke="url(#g)" stroke-width="1.5" stroke-linecap="round"/>
+        <defs><linearGradient id="g" x1="4" y1="3" x2="24" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#64b5f6"/><stop offset="1" stop-color="#00d4ff"/></linearGradient></defs>
+      </svg>
+      <div>
+        <div class="logo-text">BlueLock</div>
+        <div class="logo-version">v0.1.0 — AI VAULT</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot" id="backendDot"></div>
+        <span id="backendStatus">CONNECTING</span>
+      </div>
+      <button class="win-btn win-btn-close" onclick="closeWindow()">✕</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label" style="margin-bottom:10px;">Navigation</div>
+
+    <div class="nav-item active" id="navAll" onclick="setNav('all')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      All Entries
+      <span class="nav-count" id="countAll">0</span>
+    </div>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">System</div>
+
+    <div class="nav-item" onclick="checkBackend()">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Check Backend
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="vault-status">
+        <div class="vault-label">VAULT STORAGE</div>
+        <div class="vault-bar-bg">
+          <div class="vault-bar-fill" id="vaultBar" style="width:0%"></div>
+        </div>
+        <div class="vault-info">
+          <span>AES-256</span>
+          <span id="vaultSize">—</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <div class="main-header fade-in">
+      <div>
+        <div class="page-title">Vault</div>
+        <div class="page-subtitle" id="pageSubtitle">Loading entries...</div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="refreshAll()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+        <button class="btn btn-ghost" onclick="showWidget()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Show Widget
+        </button>
+      </div>
+    </div>
+
+    <div class="search-bar fade-in">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search app or login..." oninput="filterBySearch()"/>
+    </div>
+
+    <div class="stats-row fade-in">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">Saved</div>
+        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAutofills">—</div>
+        <div class="stat-label">Total Autofills</div>
+        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">Local</div>
+        <div class="stat-label">Storage</div>
+        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+      </div>
+    </div>
+
+    <div class="section-title fade-in">Saved Logins</div>
+
+    <div class="cred-grid" id="credGrid">
+      <div class="loading">Connecting to vault</div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const { ipcRenderer } = require('electron');
+const API = 'http://localhost:8000';
+let allEntries = [];
+let revealedPws = {};
+
+async function init() {
+  await checkBackend();
+  await loadStats();
+  await loadEntries();
+}
+
+// Backend ping
+async function checkBackend() {
+  try {
+    await fetch(`${API}/ping`, { signal: AbortSignal.timeout(2000) });
+    document.getElementById('backendDot').className = 'status-dot';
+    document.getElementById('backendStatus').textContent = 'ACTIVE';
+  } catch {
+    document.getElementById('backendDot').className = 'status-dot offline';
+    document.getElementById('backendStatus').textContent = 'OFFLINE';
+    showToast('⚠ Backend offline — run: python main.py', 'error', 5000);
+  }
+}
+
+// Stats
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/stats`);
+    const data = await res.json();
+    document.getElementById('statTotal').textContent = data.total_entries;
+    document.getElementById('statAutofills').textContent = data.total_autofills;
+    const pct = Math.min(95, Math.max(5, data.total_entries * 5));
+    document.getElementById('vaultBar').style.width = pct + '%';
+    document.getElementById('vaultSize').textContent = data.total_entries + ' entries';
+  } catch { /* offline */ }
+}
+
+// Load entries from DB
+async function loadEntries() {
+  try {
+    const res = await fetch(`${API}/entries`);
+    const data = await res.json();
+    allEntries = data.entries;
+    renderEntries(allEntries);
+    document.getElementById('countAll').textContent = allEntries.length;
+    document.getElementById('pageSubtitle').textContent =
+      `${allEntries.length} saved ${allEntries.length === 1 ? 'entry' : 'entries'} — AI-powered`;
+  } catch {
+    document.getElementById('credGrid').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⚠️</div>
+        <p>Could not reach backend.<br>Make sure <strong>python main.py</strong> is running.</p>
+      </div>`;
+  }
+}
+
+async function refreshAll() {
+  await checkBackend();
+  await loadStats();
+  await loadEntries();
+  showToast('✓ Refreshed', 'success');
+}
+
+// Render cards from real data
+function renderEntries(entries) {
+  const grid = document.getElementById('credGrid');
+  if (!entries.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔐</div>
+        <p>No entries yet.<br>Press <strong>F3</strong> on any login screen<br>to save your first credentials.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = entries.map((e, i) => `
+    <div class="cred-card fade-in" style="animation-delay:${i * 0.05}s">
+      <div class="cred-app-row">
+        <div class="cred-icon">${getEmoji(e.app_name)}</div>
+        <div>
+          <div class="cred-app-name">${esc(e.app_name)}</div>
+          <div class="cred-app-type">
+            ${e.last_used ? 'Last used: ' + fmtDate(e.last_used) : 'Never used'}
+            ${e.use_count > 0 ? ' · ' + e.use_count + 'x autofilled' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="cred-field">
+        <div class="cred-field-label">Username</div>
+        <div class="cred-field-value">${esc(e.username)}</div>
+      </div>
+      <div class="cred-field">
+        <div class="cred-field-label">Password</div>
+        <div class="cred-field-value">
+          <span id="pw-${e.id}">••••••••</span>
+          <span class="eye-btn" onclick="togglePw(${e.id}, '${escAttr(e.password)}')">👁</span>
+        </div>
+      </div>
+      <div class="cred-actions">
+        <div class="cred-btn delete" onclick="deleteEntry(${e.id}, '${escAttr(e.app_name)}')">🗑 Delete</div>
+        <div class="cred-btn autofill" onclick="triggerAutofill()">⚡ Autofill</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Search filter
+function filterBySearch() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = q
+    ? allEntries.filter(e => e.app_name.toLowerCase().includes(q) || e.username.toLowerCase().includes(q))
+    : allEntries;
+  renderEntries(filtered);
+}
+
+function setNav(type) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('navAll').classList.add('active');
+  renderEntries(allEntries);
+}
+
+// Delete
+async function deleteEntry(id, appName) {
+  if (!confirm(`Delete "${appName}" from vault?`)) return;
+  try {
+    await fetch(`${API}/entries/${id}`, { method: 'DELETE' });
+    showToast(`✓ "${appName}" deleted`, 'success');
+    await refreshAll();
+  } catch {
+    showToast('Error deleting entry', 'error');
+  }
+}
+
+// Autofill trigger
+async function triggerAutofill() {
+  showToast('⚡ Scanning screen...', 'success', 1500);
+  try {
+    const res = await fetch(`${API}/autofill`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`✓ Filled in: ${data.app_name}`, 'success');
+    } else {
+      showToast('⚠ No matching app found', 'error');
+    }
+  } catch {
+    showToast('Error during autofill', 'error');
+  }
+}
+
+// Toggle password visibility
+function togglePw(id, password) {
+  const el = document.getElementById(`pw-${id}`);
+  el.textContent = el.textContent === '••••••••' ? password : '••••••••';
+}
+
+// Close vault window (hides, doesn't quit)
+function closeWindow() {
+  ipcRenderer.send('close-vault');
+}
+
+// Helpers
+function getEmoji(name) {
+  const n = (name || '').toLowerCase();
+  if (['steam','game','epic','valorant','battle','riot','minecraft'].some(k => n.includes(k))) return '🎮';
+  if (['bank','paypal','finance','revolut'].some(k => n.includes(k))) return '🏦';
+  if (['slack','teams','discord'].some(k => n.includes(k))) return '💬';
+  if (['mail','gmail','outlook','yahoo'].some(k => n.includes(k))) return '📧';
+  if (['github','gitlab','code','dev'].some(k => n.includes(k))) return '💻';
+  if (['netflix','spotify','youtube','twitch'].some(k => n.includes(k))) return '🎬';
+  if (['vpn','tunnel','proxy'].some(k => n.includes(k))) return '🔒';
+  return '🔐';
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); } catch { return '—'; } }
+
+function showToast(msg, type = 'success', duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showWidget() {
+  ipcRenderer.send('restore-widget');
+}
+
+init();
+</script>
+</body>
+</html>
