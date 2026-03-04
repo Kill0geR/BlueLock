@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Exo 2', sans-serif;
+    background: transparent;
+    overflow: hidden;
+  }
+
+  .popup {
+    width: 420px;
+    background: rgba(4, 18, 45, 0.95);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(100,181,246,0.05), inset 0 1px 0 rgba(100,181,246,0.15);
+    overflow: hidden;
+    -webkit-app-region: drag;
+  }
+
+  .popup-header {
+    padding: 20px 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .popup-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .popup-logo-icon {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, rgba(13,110,253,0.3), rgba(0,212,255,0.2));
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .popup-logo-text {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #64b5f6;
+    text-transform: uppercase;
+  }
+
+  .close-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(180,215,255,0.5);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+    -webkit-app-region: no-drag;
+  }
+
+  .close-btn:hover { background: rgba(255,60,60,0.15); color: #ff8080; border-color: rgba(255,60,60,0.3); }
+
+  .popup-body {
+    padding: 20px 24px 24px;
+    -webkit-app-region: no-drag;
+  }
+
+  .screenshot-preview {
+    width: 100%;
+    height: 80px;
+    background: linear-gradient(135deg, rgba(13,110,253,0.08), rgba(0,212,255,0.04));
+    border: 1px solid rgba(100,181,246,0.15);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .screenshot-preview img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+    border-radius: 9px;
+  }
+
+  .screenshot-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(4,18,45,0.5);
+  }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+    animation: scan 2s ease-in-out infinite;
+    opacity: 0.7;
+  }
+
+  @keyframes scan {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.8; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .scan-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #00d4ff;
+    letter-spacing: 1px;
+    background: rgba(0,212,255,0.1);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,212,255,0.2);
+    z-index: 1;
+  }
+
+  .title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #e8f4ff;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: rgba(180,215,255,0.5);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+
+  .field-label {
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(100,181,246,0.6);
+    margin-bottom: 6px;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(8,30,60,0.6);
+    border: 1px solid rgba(100,181,246,0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .field-row:focus-within {
+    border-color: rgba(0,212,255,0.4);
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.1);
+    background: rgba(10,37,70,0.7);
+  }
+
+  .field-icon {
+    padding: 0 12px;
+    color: rgba(100,181,246,0.4);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .field-input {
+    flex: 1;
+    padding: 11px 12px 11px 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e8f4ff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+  }
+
+  .field-input::placeholder { color: rgba(180,215,255,0.25); }
+
+  .app-name-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .app-name-input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(8,30,60,0.6);
+    border: 1px solid rgba(100,181,246,0.15);
+    border-radius: 10px;
+    color: #e8f4ff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .app-name-input:focus {
+    border-color: rgba(0,212,255,0.4);
+    box-shadow: 0 0 0 3px rgba(13,110,253,0.1);
+  }
+
+  .app-name-input::placeholder { color: rgba(180,215,255,0.25); }
+
+  .divider {
+    height: 1px;
+    background: rgba(100,181,246,0.08);
+    margin: 16px 0;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Exo 2', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel {
+    background: rgba(100,181,246,0.05);
+    border: 1px solid rgba(100,181,246,0.15);
+    color: rgba(180,215,255,0.5);
+  }
+
+  .btn-cancel:hover { background: rgba(100,181,246,0.1); color: rgba(180,215,255,0.8); }
+
+  .btn-save {
+    background: linear-gradient(135deg, rgba(13,110,253,0.8), rgba(0,180,220,0.8));
+    color: white;
+    border: 1px solid rgba(100,181,246,0.3);
+    box-shadow: 0 4px 20px rgba(13,110,253,0.3);
+    flex: 2;
+  }
+
+  .btn-save:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 25px rgba(13,110,253,0.45);
+  }
+
+  .btn-save:active { transform: scale(0.98); }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+</style>
+</head>
+<body>
+
+<div class="popup">
+  <div class="popup-header">
+    <div class="popup-logo">
+      <div class="popup-logo-icon">🔵</div>
+      <div class="popup-logo-text">BlueLock</div>
+    </div>
+    <div class="close-btn" onclick="cancel()">✕</div>
+  </div>
+
+  <div class="popup-body">
+    <div class="screenshot-preview">
+      <img id="screenshotImg" src="" alt="" style="display:none"/>
+      <div class="scan-line"></div>
+      <div class="screenshot-overlay">
+        <span class="scan-badge">📸 SCREENSHOT AUFGENOMMEN</span>
+      </div>
+    </div>
+
+    <div class="title">Anmeldedaten speichern</div>
+    <div class="subtitle">Einmalig eingeben — BlueLock merkt sich den Rest</div>
+
+    <div class="field">
+      <div class="field-label">App / Website Name</div>
+      <input class="app-name-input" id="appName" type="text" placeholder="z.B. Valorant, Steam, Gmail..."/>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Benutzername / E-Mail</div>
+      <div class="field-row">
+        <div class="field-icon">👤</div>
+        <input class="field-input" id="username" type="text" placeholder="Dein Benutzername"/>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Passwort</div>
+      <div class="field-row">
+        <div class="field-icon">🔑</div>
+        <input class="field-input" id="password" type="password" placeholder="Dein Passwort"/>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="cancel()">Abbrechen</button>
+      <button class="btn btn-save" id="saveBtn" onclick="save()">Weiter & Speichern →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+let currentScreenshot = null;
+
+// Receive screenshot from main process
+ipcRenderer.on('screenshot', (event, screenshotB64) => {
+  currentScreenshot = screenshotB64;
+  const img = document.getElementById('screenshotImg');
+  img.src = `data:image/png;base64,${screenshotB64}`;
+  img.style.display = 'block';
+});
+
+async function save() {
+  const appName = document.getElementById('appName').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!appName || !username || !password) {
+    // Shake animation on empty fields
+    document.querySelectorAll('.field-row, .app-name-input').forEach(el => {
+      el.style.borderColor = 'rgba(255,60,60,0.5)';
+      setTimeout(() => el.style.borderColor = '', 1500);
+    });
+    return;
+  }
+
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Speichern...';
+
+  try {
+    const res = await fetch('http://localhost:8000/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_name: appName,
+        username: username,
+        password: password,
+        screenshot_b64: currentScreenshot || ''
+      })
+    });
+
+    if (res.ok) {
+      ipcRenderer.send('close-popup');
+    } else {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Weiter & Speichern →';
+    }
+  } catch (e) {
+    console.error(e);
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Weiter & Speichern →';
+  }
+}
+
+function cancel() {
+  ipcRenderer.send('close-popup');
+}
+
+// Enter key submits
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') save();
+  if (e.key === 'Escape') cancel();
+});
+</script>
+</body>
+</html>

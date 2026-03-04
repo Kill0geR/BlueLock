@@ -1,0 +1,33 @@
+{
+  "name": "bluelock",
+  "version": "0.1.0",
+  "description": "BlueLock — KI-gestützter Passwort-Manager",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win",
+    "build-mac": "electron-builder --mac"
+  },
+  "dependencies": {
+    "electron": "^31.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.bluelock.app",
+    "productName": "BlueLock",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
